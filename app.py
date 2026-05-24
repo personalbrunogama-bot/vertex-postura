@@ -1,3 +1,8 @@
+import os
+# Vacina para forçar o servidor a usar a versão correta da câmara sem falhas
+os.system("pip uninstall -y opencv-python")
+os.system("pip uninstall -y opencv-contrib-python")
+
 import streamlit as st
 import cv2
 import mediapipe as mp
@@ -106,7 +111,6 @@ if imagem_pil is not None:
         if angulo_quadril > 90: angulo_quadril = abs(angulo_quadril - 180)
         
         # Determinação clínica precisa do lado deprimido (Maior Y = Mais baixo na imagem)
-        # Nota: LEFT/RIGHT no MediaPipe refere-se ao lado anatômico do próprio cliente
         lado_baixo_ombro = "Esquerdo (Anatômico)" if ombro_esq.y > ombro_dir.y else "Direito (Anatômico)"
         lado_baixo_quadril = "Esquerdo (Anatômico)" if quadril_esq.y > quadril_dir.y else "Direito (Anatômico)"
         
@@ -115,24 +119,21 @@ if imagem_pil is not None:
             imagem_output, 
             resultados.pose_landmarks, 
             mp_pose.POSE_CONNECTIONS,
-            mp_drawing.DrawingSpec(color=(255, 255, 255), thickness=2, circle_radius=3), # Pontos brancos
-            mp_drawing.DrawingSpec(color=(246, 130, 59), thickness=2, circle_radius=2)  # Linhas laranjas
+            mp_drawing.DrawingSpec(color=(255, 255, 255), thickness=2, circle_radius=3),
+            mp_drawing.DrawingSpec(color=(246, 130, 59), thickness=2, circle_radius=2)
         )
         
-        # Traçar linhas de horizonte digital guias (Azul para ombros, Verde para quadril)
+        # Traçar linhas de horizonte digital guias
         cv2.line(imagem_output, (0, int(ombro_esq.y * h)), (w, int(ombro_esq.y * h)), (59, 130, 246), 2)
         cv2.line(imagem_output, (0, int(quadril_esq.y * h)), (w, int(quadril_esq.y * h)), (16, 185, 129), 2)
         
-        # Exibição dos resultados adaptada para telas de celulares (Disposição vertical limpa)
         st.image(imagem_output, caption="Rastreamento Biomecânico", use_container_width=True)
         
         st.markdown("### 📊 Relatório de Assimetria")
         
-        # Classificação clínica simplificada
         status_ombro = "🟢 Alinhado" if angulo_ombros < 1.5 else "🟡 Desvio Sutil" if angulo_ombros < 3.0 else "🔴 Desvio Significativo"
         status_quadril = "🟢 Alinhado" if angulo_quadril < 1.5 else "🟡 Desvio Sutil" if angulo_quadril < 3.0 else "🔴 Desvio Significativo"
         
-        # Bloco de Métricas - Ombros
         st.markdown(f"""
         <div class="metric-box">
             <div class="metric-title">Linha dos Ombros (Acrômios)</div>
@@ -142,7 +143,6 @@ if imagem_pil is not None:
         </div>
         """, unsafe_allow_html=True)
         
-        # Bloco de Métricas - Quadril
         st.markdown(f"""
         <div class="metric-box" style="border-left-color: #10b981;">
             <div class="metric-title">Linha da Pélvis (Báscula Pélvica)</div>
@@ -152,7 +152,6 @@ if imagem_pil is not None:
         </div>
         """, unsafe_allow_html=True)
         
-        # Campo de anotações práticas para o avaliador
         st.markdown("### 📝 Conduta e Evolução")
         notas = st.text_area("Observações clínicas e direcionamento de exercício:", 
                              placeholder="Ex: Foco em ativação de glúteo médio do lado deprimido, acompanhar evolução...")
